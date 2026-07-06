@@ -1,3 +1,4 @@
+<img width="1890" height="1063" alt="KTP" src="https://github.com/user-attachments/assets/f331d8fd-d2ee-4dc9-a4ae-01d433630184" />
 # Bus, Metro, Rail, Ferry — One City, Every Route
 A structured, multi-modal transit dataset covering Greater Kolkata's bus, Metro and suburban rail networks.
 
