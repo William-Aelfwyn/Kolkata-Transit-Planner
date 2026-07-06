@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kolkata Transit Planner — Demo Route Finder</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts for premium typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for beautiful transit icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Vis.js for Interactive Network Map -->
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <i class="fa-solid fa-compass-drafting logo-icon"></i>
+                <div class="logo-text">
+                    <h1>Kolkata Transit Planner</h1>
+                    <span class="tagline">Demo Multi-Modal Trip Finder</span>
+                </div>
+            </div>
+            <div class="header-controls" style="display: flex; gap: 15px; align-items: center;">
+                <button id="theme-toggle" class="icon-btn-circle theme-btn" title="Toggle Theme" style="width: 36px; height: 36px;">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+                <div class="demo-badge">
+                    <span class="pulse-dot"></span>
+                    Live Map
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Layout Grid -->
+        <main class="app-main">
+            <!-- Left Panel: Input & Query Form -->
+            <section class="control-panel glass-card">
+                <div class="panel-header">
+                    <h2>Plan Your Journey</h2>
+                    <p>Find the best bus, metro, rail, or auto routes across Kolkata.</p>
+                </div>
+
+                <form id="route-form" autocomplete="off">
+                    <!-- From Input -->
+                    <div class="input-group">
+                        <label for="from-input"><i class="fa-solid fa-location-dot input-icon text-green"></i> From</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="from-input" placeholder="Enter starting locality/landmark..." required>
+                            <button type="button" class="clear-btn" id="clear-from"><i class="fa-solid fa-xmark"></i></button>
+                            <div class="autocomplete-list" id="from-list"></div>
+                        </div>
+                    </div>
+
+                    <!-- Swap Button -->
+                    <div class="swap-row">
+                        <button type="button" id="swap-btn" class="icon-btn-circle" title="Swap locations">
+                            <i class="fa-solid fa-arrows-up-down"></i>
+                        </button>
+                    </div>
+
+                    <!-- To Input -->
+                    <div class="input-group">
+                        <label for="to-input"><i class="fa-solid fa-circle-dot input-icon text-red"></i> To</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="to-input" placeholder="Enter destination locality/landmark..." required>
+                            <button type="button" class="clear-btn" id="clear-to"><i class="fa-solid fa-xmark"></i></button>
+                            <div class="autocomplete-list" id="to-list"></div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="search-btn">
+                        <span>Find Routes</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </form>
+
+                <!-- Shortcut chips of popular destinations -->
+                <div class="shortcuts-container">
+                    <h3>Popular Quick Routes</h3>
+                    <div class="chips-grid">
+                        <button class="chip" data-from="Howrah Station" data-to="Salt Lake Sector V">Howrah → Sector V</button>
+                        <button class="chip" data-from="Sealdah Station" data-to="Jadavpur">Sealdah → Jadavpur</button>
+                        <button class="chip" data-from="Shyambazar" data-to="Kalighat">Shyambazar → Kalighat</button>
+                        <button class="chip" data-from="Gariahat" data-to="Kalighat">Gariahat ↔ Kalighat (Auto)</button>
+                    </div>
+                </div>
+
+                <!-- Info Box -->
+                <div class="info-box">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <p><strong>Demo Dataset:</strong> Covers select well-known routes only. No live tracking is performed. Please select from the listed autocomplete suggestions.</p>
+                </div>
+            </section>
+
+            <!-- Right Panel: Results & Reasoning Logic Log -->
+            <section class="results-panel">
+                <!-- Welcome State -->
+                <div id="welcome-state" class="glass-card welcome-card">
+                    <div class="welcome-graphics">
+                        <i class="fa-solid fa-bus mode-icon yellow-bus"></i>
+                        <i class="fa-solid fa-train-subway mode-icon blue-metro"></i>
+                        <i class="fa-solid fa-taxi mode-icon auto-rickshaw"></i>
+                    </div>
+                    <h2>Welcome to the Transit Planner</h2>
+                    <p>Enter your origin and destination in the panel to calculate optimal routes. The planner will compare multiple transit networks and display its rule-based decisions step-by-step.</p>
+                </div>
+
+                <!-- Results Output State (Hidden by default) -->
+                <div id="results-state" class="hidden">
+                    <div class="results-header">
+                        <h2>Suggested Options</h2>
+                        <span class="route-summary-text" id="route-summary-title">Howrah Station to Esplanade</span>
+                    </div>
+
+                    <!-- Recommended Itinerary Cards -->
+                    <div class="itineraries-container" id="itineraries-list">
+                        <!-- Dynamic content loaded here -->
+                    </div>
+
+                    <!-- Interactive Node Map -->
+                    <div class="glass-card map-card" id="map-container" style="display: none; height: 350px; margin-bottom: 30px; padding: 0; overflow: hidden; position: relative;">
+                        <div id="journey-map" style="width: 100%; height: 100%;"></div>
+                        <div class="map-overlay" id="map-overlay-title" style="position: absolute; top: 10px; left: 15px; background: var(--bg-card); padding: 5px 12px; border-radius: 4px; font-weight: 700; font-size: 0.85rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); color: var(--accent-blue); z-index: 10; border: 1px solid var(--border-color);">Interactive Route Map</div>
+                    </div>
+
+                    <!-- Reasoning Engine Log (Transparent Algorithmic trace) -->
+                    <div class="glass-card logic-log-card">
+                        <div class="log-header">
+                            <h3><i class="fa-solid fa-microchip"></i> Routing Engine Decision Trace</h3>
+                            <span class="badge badge-tech">Rule-Based Flow</span>
+                        </div>
+                        <div class="log-description">
+                            This trace shows how the routing engine evaluated the connections in real time:
+                        </div>
+                        <ul class="log-steps" id="log-steps-container">
+                            <!-- Steps added programmatically -->
+                        </ul>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Footer -->
+            <footer class="app-footer">
+                <p>Kolkata Transit Planner &copy; 2026. Interactive Map Demo.</p>
+                <div class="footer-links">
+                    <span><i class="fa-solid fa-bolt"></i> Local Rules Engine</span>
+                    <span><i class="fa-solid fa-database"></i> Curated JSON Network</span>
+                </div>
+            </footer>
+        </div>
+    </div>
+    <script src="Dataset/routes1.js"></script>
+    <script src="Dataset/routes2.js"></script>
+    <script src="Dataset/routes3.js"></script>
+    <script src="Dataset/routes4.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
